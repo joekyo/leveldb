@@ -27,11 +27,15 @@ class LEVELDB_EXPORT Status {
   Status() noexcept : state_(nullptr) {}
   ~Status() { delete[] state_; }
 
+  //: copy operation
   Status(const Status& rhs);
   Status& operator=(const Status& rhs);
 
+  //: move operation
   Status(Status&& rhs) noexcept : state_(rhs.state_) { rhs.state_ = nullptr; }
   Status& operator=(Status&& rhs) noexcept;
+
+  //: static functions return various Statuses
 
   // Return a success status.
   static Status OK() { return Status(); }
@@ -52,6 +56,8 @@ class LEVELDB_EXPORT Status {
   static Status IOError(const Slice& msg, const Slice& msg2 = Slice()) {
     return Status(kIOError, msg, msg2);
   }
+
+  //: instance methods check Status
 
   // Returns true iff the status indicates success.
   bool ok() const { return (state_ == nullptr); }
@@ -86,7 +92,7 @@ class LEVELDB_EXPORT Status {
   };
 
   Code code() const {
-    return (state_ == nullptr) ? kOk : static_cast<Code>(state_[4]);
+    return (state_ == nullptr) ? kOk : static_cast<Code>(state_[4]); //: 5th byte in state_ is code
   }
 
   Status(Code code, const Slice& msg, const Slice& msg2);
@@ -100,9 +106,11 @@ class LEVELDB_EXPORT Status {
   const char* state_;
 };
 
+//: copy constructor
 inline Status::Status(const Status& rhs) {
   state_ = (rhs.state_ == nullptr) ? nullptr : CopyState(rhs.state_);
 }
+//: copy assignment operator
 inline Status& Status::operator=(const Status& rhs) {
   // The following condition catches both aliasing (when this == &rhs),
   // and the common case where both rhs and *this are ok.
@@ -112,8 +120,9 @@ inline Status& Status::operator=(const Status& rhs) {
   }
   return *this;
 }
+//: move assignment operator
 inline Status& Status::operator=(Status&& rhs) noexcept {
-  std::swap(state_, rhs.state_);
+  std::swap(state_, rhs.state_); //: why called swap here? no need set rhs.state_ to nullptr?
   return *this;
 }
 

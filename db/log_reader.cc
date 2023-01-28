@@ -53,6 +53,7 @@ bool Reader::SkipToInitialBlock() {
   return true;
 }
 
+//: keep reading fragments in a loop to find a complete record
 bool Reader::ReadRecord(Slice* record, std::string* scratch) {
   if (last_record_offset_ < initial_offset_) {
     if (!SkipToInitialBlock()) {
@@ -213,12 +214,15 @@ unsigned int Reader::ReadPhysicalRecord(Slice* result) {
       }
     }
 
+    //: when reach here, we got buffer_.size() >= kHeaderSize
+
     // Parse the header
     const char* header = buffer_.data();
     const uint32_t a = static_cast<uint32_t>(header[4]) & 0xff;
     const uint32_t b = static_cast<uint32_t>(header[5]) & 0xff;
     const unsigned int type = header[6];
     const uint32_t length = a | (b << 8);
+    //: header size + record length should <= buffer size
     if (kHeaderSize + length > buffer_.size()) {
       size_t drop_size = buffer_.size();
       buffer_.clear();

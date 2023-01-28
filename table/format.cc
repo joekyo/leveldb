@@ -28,6 +28,7 @@ Status BlockHandle::DecodeFrom(Slice* input) {
   }
 }
 
+//: Done
 void Footer::EncodeTo(std::string* dst) const {
   const size_t original_size = dst->size();
   metaindex_handle_.EncodeTo(dst);
@@ -39,7 +40,9 @@ void Footer::EncodeTo(std::string* dst) const {
   (void)original_size;  // Disable unused variable warning.
 }
 
+//: Done
 Status Footer::DecodeFrom(Slice* input) {
+  //: read magic number (last two bytes)
   const char* magic_ptr = input->data() + kEncodedLength - 8;
   const uint32_t magic_lo = DecodeFixed32(magic_ptr);
   const uint32_t magic_hi = DecodeFixed32(magic_ptr + 4);
@@ -61,6 +64,9 @@ Status Footer::DecodeFrom(Slice* input) {
   return result;
 }
 
+//: Done
+//: use handle to read a slice from file, the data of slice consists of
+//: content, type, and crc checksum. Finally save the content to result->data
 Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
                  const BlockHandle& handle, BlockContents* result) {
   result->data = Slice();
@@ -70,7 +76,7 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   // Read the block contents as well as the type/crc footer.
   // See table_builder.cc for the code that built this structure.
   size_t n = static_cast<size_t>(handle.size());
-  char* buf = new char[n + kBlockTrailerSize];
+  char* buf = new char[n + kBlockTrailerSize]; //: 1-byte type + 32-bit crc
   Slice contents;
   Status s = file->Read(handle.offset(), n + kBlockTrailerSize, &contents, buf);
   if (!s.ok()) {
@@ -85,8 +91,8 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
   // Check the crc of the type and the block contents
   const char* data = contents.data();  // Pointer to where Read put the data
   if (options.verify_checksums) {
-    const uint32_t crc = crc32c::Unmask(DecodeFixed32(data + n + 1));
-    const uint32_t actual = crc32c::Value(data, n + 1);
+    const uint32_t crc = crc32c::Unmask(DecodeFixed32(data + n + 1)); //: skip 1-byte type
+    const uint32_t actual = crc32c::Value(data, n + 1); //: skip 32-bit crc
     if (actual != crc) {
       delete[] buf;
       s = Status::Corruption("block checksum mismatch");
@@ -100,12 +106,12 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
         // File implementation gave us pointer to some other data.
         // Use it directly under the assumption that it will be live
         // while the file is open.
-        delete[] buf;
+        delete[] buf; //: use data instead of buf
         result->data = Slice(data, n);
         result->heap_allocated = false;
         result->cachable = false;  // Do not double-cache
       } else {
-        result->data = Slice(buf, n);
+        result->data = Slice(buf, n); //: use buf instead of data
         result->heap_allocated = true;
         result->cachable = true;
       }
@@ -124,7 +130,7 @@ Status ReadBlock(RandomAccessFile* file, const ReadOptions& options,
         delete[] ubuf;
         return Status::Corruption("corrupted compressed block contents");
       }
-      delete[] buf;
+      delete[] buf; //: get uncompressed data and save to ubuf, no need buf
       result->data = Slice(ubuf, ulength);
       result->heap_allocated = true;
       result->cachable = true;

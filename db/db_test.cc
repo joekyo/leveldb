@@ -87,6 +87,7 @@ class TestEnv : public EnvWrapper {
 
   void SetIgnoreDotFiles(bool ignored) { ignore_dot_files_ = ignored; }
 
+  //: save files name inside dir to result
   Status GetChildren(const std::string& dir,
                      std::vector<std::string>* result) override {
     Status s = target()->GetChildren(dir, result);

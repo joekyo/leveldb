@@ -52,13 +52,16 @@ void PutVarint32(std::string* dst, uint32_t v) {
   dst->append(buf, ptr - buf);
 }
 
-char* EncodeVarint64(char* dst, uint64_t v) {
-  static const int B = 128;
+char* EncodeVarint64(char* dst, uint64_t v) { //: v has 8 bytes
+  static const int B = 128;                   //: 128 = 0b 1000 000
   uint8_t* ptr = reinterpret_cast<uint8_t*>(dst);
+  //: take lowest 7 bits of v each time
+  //: first bit indicates whether there are more bytes
   while (v >= B) {
     *(ptr++) = v | B;
     v >>= 7;
   }
+  //: last byte is smaller than 128, its first bit is 0
   *(ptr++) = static_cast<uint8_t>(v);
   return reinterpret_cast<char*>(ptr);
 }
@@ -89,6 +92,7 @@ const char* GetVarint32PtrFallback(const char* p, const char* limit,
   for (uint32_t shift = 0; shift <= 28 && p < limit; shift += 7) {
     uint32_t byte = *(reinterpret_cast<const uint8_t*>(p));
     p++;
+    //: first bit is 1 except the last byte
     if (byte & 128) {
       // More bytes are present
       result |= ((byte & 127) << shift);
@@ -101,9 +105,11 @@ const char* GetVarint32PtrFallback(const char* p, const char* limit,
   return nullptr;
 }
 
+//: it moves 'input' forward
 bool GetVarint32(Slice* input, uint32_t* value) {
   const char* p = input->data();
   const char* limit = p + input->size();
+  //: GetVarint32Ptr saves int32 to value, and move p forward
   const char* q = GetVarint32Ptr(p, limit, value);
   if (q == nullptr) {
     return false;
@@ -118,9 +124,9 @@ const char* GetVarint64Ptr(const char* p, const char* limit, uint64_t* value) {
   for (uint32_t shift = 0; shift <= 63 && p < limit; shift += 7) {
     uint64_t byte = *(reinterpret_cast<const uint8_t*>(p));
     p++;
-    if (byte & 128) {
+    if (byte & 128) {  //: 128 = 0b 1000 0000
       // More bytes are present
-      result |= ((byte & 127) << shift);
+      result |= ((byte & 127) << shift);  //: take the lowest 7 bits
     } else {
       result |= (byte << shift);
       *value = result;
@@ -144,6 +150,7 @@ bool GetVarint64(Slice* input, uint64_t* value) {
 
 bool GetLengthPrefixedSlice(Slice* input, Slice* result) {
   uint32_t len;
+  //: GetVarint32 moves 'input' forward
   if (GetVarint32(input, &len) && input->size() >= len) {
     *result = Slice(input->data(), len);
     input->remove_prefix(len);

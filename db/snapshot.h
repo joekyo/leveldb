@@ -53,6 +53,7 @@ class SnapshotList {
     return head_.prev_;
   }
 
+  //: create snapshot and add to linked-list
   // Creates a SnapshotImpl and appends it to the end of the list.
   SnapshotImpl* New(SequenceNumber sequence_number) {
     assert(empty() || newest()->sequence_number_ <= sequence_number);
@@ -69,6 +70,7 @@ class SnapshotList {
     return snapshot;
   }
 
+  //: remove snapshot from linked-list
   // Removes a SnapshotImpl from this list.
   //
   // The snapshot must have been created by calling New() on this list.

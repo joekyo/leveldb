@@ -68,6 +68,7 @@ static const SequenceNumber kMaxSequenceNumber = ((0x1ull << 56) - 1);
 
 struct ParsedInternalKey {
   Slice user_key;
+  //: seq and typ will take 8 bytes
   SequenceNumber sequence;
   ValueType type;
 
@@ -79,7 +80,7 @@ struct ParsedInternalKey {
 
 // Return the length of the encoding of "key".
 inline size_t InternalKeyEncodingLength(const ParsedInternalKey& key) {
-  return key.user_key.size() + 8;
+  return key.user_key.size() + 8; //: seq and type will take 8 bytes
 }
 
 // Append the serialization of "key" to *result.
@@ -172,9 +173,9 @@ inline bool ParseInternalKey(const Slice& internal_key,
                              ParsedInternalKey* result) {
   const size_t n = internal_key.size();
   if (n < 8) return false;
-  uint64_t num = DecodeFixed64(internal_key.data() + n - 8);
-  uint8_t c = num & 0xff;
-  result->sequence = num >> 8;
+  uint64_t num = DecodeFixed64(internal_key.data() + n - 8); //: take the last 8 bytes: seq + typ
+  uint8_t c = num & 0xff; //: typ is the last byte
+  result->sequence = num >> 8; //: seq is the first 7 bytes
   result->type = static_cast<ValueType>(c);
   result->user_key = Slice(internal_key.data(), n - 8);
   return (c <= static_cast<uint8_t>(kTypeValue));

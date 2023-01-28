@@ -174,6 +174,7 @@ void TableBuilder::WriteBlock(BlockBuilder* block, BlockHandle* handle) {
   block->Reset();
 }
 
+//: update offset and size of handle; write block_contents and trailer to r->file
 void TableBuilder::WriteRawBlock(const Slice& block_contents,
                                  CompressionType type, BlockHandle* handle) {
   Rep* r = rep_;
@@ -181,11 +182,11 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
   handle->set_size(block_contents.size());
   r->status = r->file->Append(block_contents);
   if (r->status.ok()) {
-    char trailer[kBlockTrailerSize];
+    char trailer[kBlockTrailerSize]; //: size 5 = 1 byte type + 4 bytes crc32
     trailer[0] = type;
     uint32_t crc = crc32c::Value(block_contents.data(), block_contents.size());
     crc = crc32c::Extend(crc, trailer, 1);  // Extend crc to cover block type
-    EncodeFixed32(trailer + 1, crc32c::Mask(crc));
+    EncodeFixed32(trailer + 1, crc32c::Mask(crc)); //: write crc32 to last 4 bytes; skip 1 byte type
     r->status = r->file->Append(Slice(trailer, kBlockTrailerSize));
     if (r->status.ok()) {
       r->offset += block_contents.size() + kBlockTrailerSize;
@@ -195,6 +196,7 @@ void TableBuilder::WriteRawBlock(const Slice& block_contents,
 
 Status TableBuilder::status() const { return rep_->status; }
 
+//: write block handles to rep_ and footer; save footer to file
 Status TableBuilder::Finish() {
   Rep* r = rep_;
   Flush();

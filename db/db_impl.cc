@@ -4,14 +4,6 @@
 
 #include "db/db_impl.h"
 
-#include <algorithm>
-#include <atomic>
-#include <cstdint>
-#include <cstdio>
-#include <set>
-#include <string>
-#include <vector>
-
 #include "db/builder.h"
 #include "db/db_iter.h"
 #include "db/dbformat.h"
@@ -22,11 +14,20 @@
 #include "db/table_cache.h"
 #include "db/version_set.h"
 #include "db/write_batch_internal.h"
+#include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <cstdio>
+#include <set>
+#include <string>
+#include <vector>
+
 #include "leveldb/db.h"
 #include "leveldb/env.h"
 #include "leveldb/status.h"
 #include "leveldb/table.h"
 #include "leveldb/table_builder.h"
+
 #include "port/port.h"
 #include "table/block.h"
 #include "table/merger.h"
@@ -452,6 +453,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
       *max_sequence = last_seq;
     }
 
+    //: write mem to edit and set mem to nullptr when mem is big enough
     if (mem->ApproximateMemoryUsage() > options_.write_buffer_size) {
       compactions++;
       *save_manifest = true;
@@ -464,7 +466,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
         break;
       }
     }
-  }
+  } //: read record loop ends
 
   delete file;
 
@@ -481,7 +483,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
       logfile_number_ = log_number;
       if (mem != nullptr) {
         mem_ = mem;
-        mem = nullptr;
+        mem = nullptr; //: mem got reused
       } else {
         // mem can be nullptr if lognum exists but was empty.
         mem_ = new MemTable(internal_comparator_);
@@ -502,6 +504,7 @@ Status DBImpl::RecoverLogFile(uint64_t log_number, bool last_log,
   return status;
 }
 
+//: Called from RecoverLogFile and CompactMemTable to write MemTable into file
 Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
                                 Version* base) {
   mutex_.AssertHeld();
@@ -509,13 +512,14 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
   FileMetaData meta;
   meta.number = versions_->NewFileNumber();
   pending_outputs_.insert(meta.number);
-  Iterator* iter = mem->NewIterator();
+  Iterator* iter = mem->NewIterator(); //: use mem's iter to access mem
   Log(options_.info_log, "Level-0 table #%llu: started",
       (unsigned long long)meta.number);
 
   Status s;
   {
     mutex_.Unlock();
+    //: read metadata into *meta; save key/value from iter into db file
     s = BuildTable(dbname_, env_, options_, table_cache_, iter, &meta);
     mutex_.Lock();
   }
@@ -535,6 +539,7 @@ Status DBImpl::WriteLevel0Table(MemTable* mem, VersionEdit* edit,
     if (base != nullptr) {
       level = base->PickLevelForMemTableOutput(min_user_key, max_user_key);
     }
+    //: add meta to edit
     edit->AddFile(level, meta.number, meta.file_size, meta.smallest,
                   meta.largest);
   }
@@ -1112,6 +1117,7 @@ int64_t DBImpl::TEST_MaxNextLevelOverlappingBytes() {
   return versions_->MaxNextLevelOverlappingBytes();
 }
 
+//: look up order: mem -> imm -> version current
 Status DBImpl::Get(const ReadOptions& options, const Slice& key,
                    std::string* value) {
   Status s;
@@ -1268,7 +1274,7 @@ Status DBImpl::Write(const WriteOptions& options, WriteBatch* updates) {
   }
 
   return status;
-}
+}  //: end of DBImpl:Write
 
 // REQUIRES: Writer list must be non-empty
 // REQUIRES: First writer must have a non-null batch
@@ -1494,6 +1500,7 @@ Status DB::Delete(const WriteOptions& opt, const Slice& key) {
 
 DB::~DB() = default;
 
+//: Here
 Status DB::Open(const Options& options, const std::string& dbname, DB** dbptr) {
   *dbptr = nullptr;
 

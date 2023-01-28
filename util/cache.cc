@@ -79,10 +79,10 @@ class HandleTable {
   LRUHandle* Insert(LRUHandle* h) {
     LRUHandle** ptr = FindPointer(h->key(), h->hash);
     LRUHandle* old = *ptr;
-    h->next_hash = (old == nullptr ? nullptr : old->next_hash);
+    h->next_hash = (old == nullptr ? nullptr : old->next_hash); //: replace existing item!?
     *ptr = h;
     if (old == nullptr) {
-      ++elems_;
+      ++elems_; //: add a new item into the hash table
       if (elems_ > length_) {
         // Since each cache entry is fairly large, we aim for a small
         // average linked list length (<= 1).
@@ -96,7 +96,7 @@ class HandleTable {
     LRUHandle** ptr = FindPointer(key, hash);
     LRUHandle* result = *ptr;
     if (result != nullptr) {
-      *ptr = result->next_hash;
+      *ptr = result->next_hash; //: e.g. found 'b', then a->b->c becomes a->c
       --elems_;
     }
     return result;
@@ -112,9 +112,9 @@ class HandleTable {
   // Return a pointer to slot that points to a cache entry that
   // matches key/hash.  If there is no such cache entry, return a
   // pointer to the trailing slot in the corresponding linked list.
-  LRUHandle** FindPointer(const Slice& key, uint32_t hash) {
+  LRUHandle** FindPointer(const Slice& key, uint32_t hash) { //: lookup in hash table list_
     LRUHandle** ptr = &list_[hash & (length_ - 1)];
-    while (*ptr != nullptr && ((*ptr)->hash != hash || key != (*ptr)->key())) {
+    while (*ptr != nullptr && ((*ptr)->hash != hash || key != (*ptr)->key())) { //: hash is for fast comparision
       ptr = &(*ptr)->next_hash;
     }
     return ptr;
@@ -130,11 +130,11 @@ class HandleTable {
     uint32_t count = 0;
     for (uint32_t i = 0; i < length_; i++) {
       LRUHandle* h = list_[i];
-      while (h != nullptr) {
+      while (h != nullptr) { //: move all items in linked list to new slot; start from head -> next -> ...
         LRUHandle* next = h->next_hash;
         uint32_t hash = h->hash;
         LRUHandle** ptr = &new_list[hash & (new_length - 1)];
-        h->next_hash = *ptr;
+        h->next_hash = *ptr; //: insert h into the first slot of the linked list
         *ptr = h;
         h = next;
         count++;
@@ -334,7 +334,7 @@ void LRUCache::Prune() {
 }
 
 static const int kNumShardBits = 4;
-static const int kNumShards = 1 << kNumShardBits;
+static const int kNumShards = 1 << kNumShardBits; //: 16 shards?
 
 class ShardedLRUCache : public Cache {
  private:

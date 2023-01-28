@@ -68,6 +68,7 @@ Slice BlockBuilder::Finish() {
   return Slice(buffer_);
 }
 
+//: add key and value to buffer_; key and last_key_ may share same prefix
 void BlockBuilder::Add(const Slice& key, const Slice& value) {
   Slice last_key_piece(last_key_);
   assert(!finished_);
@@ -94,7 +95,7 @@ void BlockBuilder::Add(const Slice& key, const Slice& value) {
   PutVarint32(&buffer_, value.size());
 
   // Add string delta to buffer_ followed by value
-  buffer_.append(key.data() + shared, non_shared);
+  buffer_.append(key.data() + shared, non_shared); //: when shared is 0, this add the whole key
   buffer_.append(value.data(), value.size());
 
   // Update state

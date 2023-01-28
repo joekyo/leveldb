@@ -18,7 +18,9 @@
 #include "db/dbformat.h"
 #include "db/memtable.h"
 #include "db/write_batch_internal.h"
+
 #include "leveldb/db.h"
+
 #include "util/coding.h"
 
 namespace leveldb {
@@ -45,6 +47,8 @@ Status WriteBatch::Iterate(Handler* handler) const {
     return Status::Corruption("malformed WriteBatch (too small)");
   }
 
+  //: input is a copy of rep_
+  //: input will be modified, while rep_ remains the same
   input.remove_prefix(kHeader);
   Slice key, value;
   int found = 0;
@@ -54,6 +58,8 @@ Status WriteBatch::Iterate(Handler* handler) const {
     input.remove_prefix(1);
     switch (tag) {
       case kTypeValue:
+        //: GetLengthPrefixedSlice removes prefix of input
+        //: it also move 'input' forward
         if (GetLengthPrefixedSlice(&input, &key) &&
             GetLengthPrefixedSlice(&input, &value)) {
           handler->Put(key, value);
@@ -80,11 +86,11 @@ Status WriteBatch::Iterate(Handler* handler) const {
 }
 
 int WriteBatchInternal::Count(const WriteBatch* b) {
-  return DecodeFixed32(b->rep_.data() + 8);
+  return DecodeFixed32(b->rep_.data() + 8); //: skip 8 bytes seq num
 }
 
 void WriteBatchInternal::SetCount(WriteBatch* b, int n) {
-  EncodeFixed32(&b->rep_[8], n);
+  EncodeFixed32(&b->rep_[8], n); //: skip 8 bytes seq num
 }
 
 SequenceNumber WriteBatchInternal::Sequence(const WriteBatch* b) {
@@ -98,6 +104,7 @@ void WriteBatchInternal::SetSequence(WriteBatch* b, SequenceNumber seq) {
 void WriteBatch::Put(const Slice& key, const Slice& value) {
   WriteBatchInternal::SetCount(this, WriteBatchInternal::Count(this) + 1);
   rep_.push_back(static_cast<char>(kTypeValue));
+  //: PutLengthPrefixedSlice appends data to rep_
   PutLengthPrefixedSlice(&rep_, key);
   PutLengthPrefixedSlice(&rep_, value);
 }

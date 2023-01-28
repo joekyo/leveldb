@@ -14,6 +14,10 @@
 
 namespace leveldb {
 
+//: Called from db_impl.cc and repair.cc
+//: 1, combile dbname and meta->number to create a new db file
+//: 2, read data (smallest, largest, file_size) from iter and fill into *meta
+//: 3, read key/vaule from iter into TableBuilder *builder to save into db file
 Status BuildTable(const std::string& dbname, Env* env, const Options& options,
                   TableCache* table_cache, Iterator* iter, FileMetaData* meta) {
   Status s;
@@ -33,6 +37,7 @@ Status BuildTable(const std::string& dbname, Env* env, const Options& options,
     Slice key;
     for (; iter->Valid(); iter->Next()) {
       key = iter->key();
+      //: this may trigger Flush which calls WritableFile::Append(Slice&)
       builder->Add(key, iter->value());
     }
     if (!key.empty()) {

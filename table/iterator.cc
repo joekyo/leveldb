@@ -20,12 +20,16 @@ Iterator::~Iterator() {
       delete node;
       node = next_node;
     }
+    //: cleanup_head_ is a value, thus cannot delete it
+    //: delete cleanup_head_; //: exists on stack?
   }
 }
 
 void Iterator::RegisterCleanup(CleanupFunction func, void* arg1, void* arg2) {
   assert(func != nullptr);
   CleanupNode* node;
+
+  //: insert to the begining of the linked-list
   if (cleanup_head_.IsEmpty()) {
     node = &cleanup_head_;
   } else {
@@ -33,6 +37,7 @@ void Iterator::RegisterCleanup(CleanupFunction func, void* arg1, void* arg2) {
     node->next = cleanup_head_.next;
     cleanup_head_.next = node;
   }
+
   node->function = func;
   node->arg1 = arg1;
   node->arg2 = arg2;

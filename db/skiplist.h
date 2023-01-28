@@ -173,7 +173,7 @@ struct SkipList<Key, Comparator>::Node {
 
  private:
   // Array of length equal to the node height.  next_[0] is lowest level link.
-  std::atomic<Node*> next_[1];
+  std::atomic<Node*> next_[1]; //: next_ looks like an array
 };
 
 template <typename Key, class Comparator>
@@ -263,11 +263,11 @@ SkipList<Key, Comparator>::FindGreaterOrEqual(const Key& key,
   int level = GetMaxHeight() - 1;
   while (true) {
     Node* next = x->Next(level);
-    if (KeyIsAfterNode(key, next)) {
+    if (KeyIsAfterNode(key, next)) { //: next->key is less than key
       // Keep searching in this list
       x = next;
     } else {
-      if (prev != nullptr) prev[level] = x;
+      if (prev != nullptr) prev[level] = x; //: ?? why need prev in this function
       if (level == 0) {
         return next;
       } else {
@@ -288,13 +288,14 @@ SkipList<Key, Comparator>::FindLessThan(const Key& key) const {
     Node* next = x->Next(level);
     if (next == nullptr || compare_(next->key, key) >= 0) {
       if (level == 0) {
-        return x;
+        return x; //: Node* is nullptr if not found???
+        =o
       } else {
         // Switch to next list
         level--;
       }
     } else {
-      x = next;
+      x = next; //: next->key is less than key, continue comparing with next node
     }
   }
 }

@@ -122,8 +122,8 @@ class Version {
 
   explicit Version(VersionSet* vset)
       : vset_(vset),
-        next_(this),
-        prev_(this),
+        next_(this), //: double-linked list
+        prev_(this), //: double-linked list
         refs_(0),
         file_to_compact_(nullptr),
         file_to_compact_level_(-1),
@@ -291,6 +291,7 @@ class VersionSet {
   // Save current contents to *log
   Status WriteSnapshot(log::Writer* log);
 
+  //: set v as current_, add v to doubly-linked list dummy_versions_
   void AppendVersion(Version* v);
 
   Env* const env_;

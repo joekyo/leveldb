@@ -18,12 +18,13 @@ class Block;
 class RandomAccessFile;
 struct ReadOptions;
 
+//: Done
 // BlockHandle is a pointer to the extent of a file that stores a data
 // block or a meta block.
 class BlockHandle {
  public:
   // Maximum encoding length of a BlockHandle
-  enum { kMaxEncodedLength = 10 + 10 };
+  enum { kMaxEncodedLength = 10 + 10 }; //: varint64 may takes 10 bytes, 64/7 ~= 10
 
   BlockHandle();
 
@@ -43,6 +44,7 @@ class BlockHandle {
   uint64_t size_;
 };
 
+//: Done
 // Footer encapsulates the fixed information stored at the tail
 // end of every table file.
 class Footer {

@@ -575,7 +575,7 @@ class VersionSet::Builder {
     bool operator()(FileMetaData* f1, FileMetaData* f2) const {
       int r = internal_comparator->Compare(f1->smallest, f2->smallest);
       if (r != 0) {
-        return (r < 0);
+        return (r < 0); //: true when r = -1
       } else {
         // Break ties by file number
         return (f1->number < f2->number);
@@ -586,7 +586,7 @@ class VersionSet::Builder {
   typedef std::set<FileMetaData*, BySmallestKey> FileSet;
   struct LevelState {
     std::set<uint64_t> deleted_files;
-    FileSet* added_files;
+    FileSet* added_files; //: this is an ordered set, sort by BySmallestKey
   };
 
   VersionSet* vset_;
@@ -725,7 +725,7 @@ class VersionSet::Builder {
                                     f->smallest) < 0);
       }
       f->refs++;
-      files->push_back(f);
+      files->push_back(f); //: add to v->files_[level]
     }
   }
 };
@@ -768,12 +768,13 @@ void VersionSet::AppendVersion(Version* v) {
   v->Ref();
 
   // Append to linked list
-  v->prev_ = dummy_versions_.prev_;
+  v->prev_ = dummy_versions_.prev_; //: point prev_ to last element
   v->next_ = &dummy_versions_;
   v->prev_->next_ = v;
   v->next_->prev_ = v;
 }
 
+//: Here
 Status VersionSet::LogAndApply(VersionEdit* edit, port::Mutex* mu) {
   if (edit->has_log_number_) {
     assert(edit->log_number_ >= log_number_);

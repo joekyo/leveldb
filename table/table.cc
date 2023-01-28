@@ -79,6 +79,7 @@ Status Table::Open(const Options& options, RandomAccessFile* file,
   return s;
 }
 
+//: for setting up rep_->filter and rep_->filter_data
 void Table::ReadMeta(const Footer& footer) {
   if (rep_->options.filter_policy == nullptr) {
     return;  // Do not need any metadata

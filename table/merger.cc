@@ -75,7 +75,7 @@ class MergingIterator : public Iterator {
     }
 
     current_->Next();
-    FindSmallest();
+    FindSmallest(); //: set current_ to smallest; Need compare all children each time Next() is called?
   }
 
   void Prev() override {
@@ -104,7 +104,7 @@ class MergingIterator : public Iterator {
     }
 
     current_->Prev();
-    FindLargest();
+    FindLargest(); //: set current_ to largest; Need compare all children each time Prev() is called?
   }
 
   Slice key() const override {
